@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from youtube_dl import YoutubeDL
 
+
 class music(commands.Cog):
     def __init__(self, bot):
         # Инициализация Cog для музыки с передачей экземпляра бота
@@ -71,8 +72,8 @@ class music(commands.Cog):
         # Команда для воспроизведения песни
         query = " ".join(args)
 
-        voice_channel = ctx.author.voice.channel
-        if voice_channel is None:
+        voice_channel = ctx.author.voice
+        if voice_channel is None or voice_channel.channel is None:
             await ctx.send("Подключитесь к голосовому каналу!")
         elif self.is_paused:
             self.vc.resume()
@@ -82,7 +83,7 @@ class music(commands.Cog):
                 await ctx.send("Не удалось загрузить песню. Неверный формат, попробуйте другой запрос")
             else:
                 await ctx.send("Песня добавлена в очередь")
-                self.music_queue.append([song, voice_channel])
+                self.music_queue.append([song, voice_channel.channel])
 
                 if not self.is_playing:
                     await self.play_music(ctx)
