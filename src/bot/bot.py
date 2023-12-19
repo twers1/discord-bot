@@ -10,7 +10,7 @@ from src.loader import bot, TOKEN
 from discord.utils import get
 
 BADWORDS = ["лох", "дурак"]
-LINKS = ["https", "http", "://", "com", "ru"]
+LINKS = ["https", "http", "://", ".com", ".ru"]
 
 
 if not os.path.exists('users.json'):
