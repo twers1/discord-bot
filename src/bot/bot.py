@@ -2,7 +2,9 @@ import json
 import os
 
 import discord
+from discord.ext import commands
 
+from src.bot.bot_functions import process_warning, process_warning_for_command
 from src.bot.cogs.help_cog import help_cog
 from src.bot.cogs.moderation import Moderation
 from src.bot.cogs.music_cog import music
@@ -17,14 +19,6 @@ if not os.path.exists('users.json'):
     with open('users.json', 'w') as file:
         file.write('{}')
         file.close()
-
-
-@bot.event
-async def on_ready():
-    # print("Данные бота")
-    # print(f"Имя бота {bot.user.name}")
-    # print(f"ID бота: {bot.user.id}")
-
     for guild in bot.guilds:
         for member in guild.members:
             with open('users.json', 'r') as file:
@@ -43,69 +37,31 @@ async def on_ready():
 @bot.event
 async def on_message(message):
     WARN = BADWORDS + LINKS
-    for i in range(0, len(WARN)):
-        if WARN[i] in message.content.lower():
+
+    for warn_word in WARN:
+        if warn_word in message.content.lower():
+            await process_warning(message, "Ругательства/ссылки")
             await message.delete()
-            with open('users.json', 'r') as file:
-                data = json.load(file)
-                file.close()
-            with open('users.json', 'w') as file:
-                data[str(message.author.id)]['WARNS'] +=1
-                json.dump(data, file, indent=4)
-
-                file.close()
-
-            emb = discord.Embed(
-                title="Нарушение",
-                description=f"Раннее у нарушителя было уже {data[str(message.author.id)]['WARNS'] - 1}"
-                            f" нарушений, после 7 он будет забанен!",
-                timestamp=message.created_at
-            )
-
-            emb.add_field(name="Канал:", value=message.channel.mention, inline=True)
-            emb.add_field(name="Нарушитель:", value=message.author.mention, inline=True)
-            emb.add_field(name="Тип нарушения:", value="Ругательства/ссылки", inline=True)
-
-            await get(message.guild.text_channels, id=1186750128405622874).send(embed=emb)
-
-            if data[str(message.author.id)]['WARNS'] >= 7:
-                await message.author.ban(reason="Вы превысили допустимое кол-во нарушений")
+            return
 
     if message.content.isupper():
         with open('users.json', 'r') as file:
             data = json.load(file)
-            file.close()
 
-        with open('users.json', 'w') as file:
-            data[str(message.author.id)]["CAPS"] +=1
-            json.dump(data, file, indent=4)
-        data[str(message.author.id)]["CAPS"] +=1
+        author_id = str(message.author.id)
 
-        if data[str(message.author.id)]["CAPS"] >= 3:
+        # Update caps count
+        data[author_id]["CAPS"] += 1
+
+        if data[author_id]["CAPS"] >= 3:
+            await process_warning(message, "Капс")
             await message.delete()
-            with open('users.json', 'w') as file:
-                data[str(message.author.id)]["CAPS"] = 0
-                data[str(message.author.id)]["WARNS"] += 1
 
-                json.dump(data, file, indent=4)
+        # Save the updated data back to the file
+        with open('users.json', 'w') as file:
+            json.dump(data, file, indent=4)
 
-            emb = discord.Embed(
-                title="Нарушение",
-                description=f"Раннее у нарушителя было уже {data[str(message.author.id)]['WARNS'] - 1}"
-                            f" нарушений, после 7 он будет забанен!",
-                timestamp=message.created_at
-            )
-
-            emb.add_field(name="Канал:", value=message.channel.mention, inline=True)
-            emb.add_field(name="Нарушитель:", value=message.author.mention, inline=True)
-            emb.add_field(name="Тип нарушения:", value="Ругательства/ссылки", inline=True)
-
-            await get(message.guild.text_channels, id=1186750128405622874).send(embed=emb)
-
-            if data[str(message.author.id)]['WARNS'] >= 7:
-                await message.author.ban(reason="Вы превысили допустимое кол-во нарушений")
-
-
+    await bot.process_commands(message)
 
 
 @bot.command()
@@ -117,6 +73,67 @@ async def hello(ctx):
 @bot.command()
 async def test(ctx, *args):
     await ctx.send(args)
+
+
+@bot.command()
+@commands.has_permissions(manage_channels=True)
+async def warn(ctx, member: discord.Member, reason: str):
+    if reason.lower() == "badwords" or reason.lower() == "links" or reason.lower() == "caps":
+        await process_warning_for_command(ctx, member, reason)
+        await ctx.send(embed=discord.Embed(
+            title="Успешно",
+            description="*Предупреждение выдано*",
+            timestamp=ctx.message.created_at
+        ))
+    else:
+        await ctx.send(embed=discord.Embed(
+            title="Ошибка",
+            description="*Неправильная причина*",
+            timestamp=ctx.message.created_at,
+            color=discord.Color.red()
+        ))
+
+
+@warn.error
+async def error_warn(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send(embed=discord.Embed(
+            title="Ошибка",
+            description="Использование: !warn <member> <reason>",
+            timestamp=ctx.message.created_at
+        ))
+    elif isinstance(error, commands.MissingPermissions):
+        await ctx.send(embed=discord.Embed(
+            title="Ошибка",
+            description="У вас недостаточно прав",
+            timestamp=ctx.message.created_at
+        ))
+
+
+@bot.command()
+@commands.has_permissions(manage_channels=True)
+async def unwarn(ctx, member: discord.Member):
+    with open('users.json', 'r') as file:
+        data = json.load(file)
+        file.close()
+    with open('users.json', 'w') as file:
+        data[str(member.id)]['WARNS'] -= 1
+        json.dump(data, file, indent=4)
+
+        file.close()
+
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def clear_warns(ctx, member: discord.Member):
+    with open('users.json', 'r') as file:
+        data = json.load(file)
+        file.close()
+    with open('users.json', 'w') as file:
+        data[str(member.id)]['WARNS'] = 0
+        json.dump(data, file, indent=4)
+
+        file.close()
 
 
 async def setup_bot():

@@ -7,13 +7,13 @@ a Discord bot crafted with Python! This bot offers a unique set of features, inc
 ## Features
 
 ### Moderation
-My Awesome Discord Bot includes a set of powerful tools for moderating your server. Manage members, maintain order, and ensure safety with ease.
+Discord Bot includes a set of powerful tools for moderating your server. Manage members, maintain order, and ensure safety with ease.
 
 ### Music
 Enjoy an excellent musical experience with my bot. The music module, based on youtube_dl, allows you to easily play music from YouTube. And that's just the beginning! In the future, I plan to expand support to platforms like Spotify to offer you even more options for musical diversity.
 
 ### Future Plans
-My Awesome Discord Bot is constantly evolving, and I have exciting plans to add many more features. Get ready for:
+ Discord Bot is constantly evolving, and I have exciting plans to add many more features. Get ready for:
 
 - Enhanced music support with Spotify
 - Database integration for saving user settings
@@ -22,7 +22,7 @@ My Awesome Discord Bot is constantly evolving, and I have exciting plans to add 
 
 ## Installation
 
-1. Clone the repository: `git clone https://github.com/your_username/awesome-discord-bot.git`
+1. Clone the repository: `git clone `
 2. Install the required dependencies: `pip install -r requirements.txt`
 3. Create the configuration file `.env` and add your tokens and settings.
 4. Run the bot: `python main.py`
